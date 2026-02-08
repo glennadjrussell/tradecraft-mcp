@@ -41,6 +41,37 @@ claude mcp add tradecraft-mcp -- uv run --directory /path/to/tradecraft-mcp trad
 mcp dev src/tradecraft_mcp/server.py
 ```
 
+### Remote Access (SSE / Streamable HTTP)
+
+The server supports three transports: `stdio` (default), `sse`, and `streamable-http`. Use the HTTP-based transports to run the server on a machine and connect to it remotely.
+
+```bash
+# Start with SSE transport on default port 8000
+uv run tradecraft-mcp --transport sse
+
+# Start with streamable-http on a custom port
+uv run tradecraft-mcp --transport streamable-http --port 9000
+
+# Bind to a specific interface
+uv run tradecraft-mcp --transport sse --host 127.0.0.1 --port 8080
+```
+
+Then configure your MCP client to connect to the remote URL:
+
+```json
+{
+  "mcpServers": {
+    "tradecraft-mcp": {
+      "url": "http://<host>:8000/sse"
+    }
+  }
+}
+```
+
+For `streamable-http`, the endpoint is `http://<host>:<port>/mcp`.
+
+Run `uv run tradecraft-mcp --help` to see all options.
+
 ## Tools
 
 ### Domain / IP / DNS Recon (9 tools)
@@ -182,7 +213,7 @@ tradecraft-mcp/
 
 ## Architecture
 
-- **Transport:** stdio (for MCP client integration)
+- **Transport:** stdio (default), SSE, or streamable-http — selectable via `--transport`
 - **HTTP session:** Single `aiohttp.ClientSession` shared across all tools via FastMCP lifespan
 - **Output format:** Markdown strings optimized for LLM consumption
 - **Error handling:** Missing API keys raise `ValueError` (surfaced by the MCP SDK as tool errors); network errors are caught and returned as descriptive strings

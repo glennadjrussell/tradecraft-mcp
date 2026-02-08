@@ -37,12 +37,14 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
     log.info("HTTP session closed")
 
 
-def create_server() -> FastMCP:
+def create_server(host: str = "0.0.0.0", port: int = 8000) -> FastMCP:
     """Build and return the configured FastMCP server."""
     mcp = FastMCP(
         "tradecraft-mcp",
         instructions="OSINT tradecraft toolkit — domain recon, email/identity research, threat intelligence, web/social analysis",
         lifespan=app_lifespan,
+        host=host,
+        port=port,
     )
     register_all_tools(mcp)
     register_all_prompts(mcp)

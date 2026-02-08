@@ -4,14 +4,14 @@ This document describes the internal architecture and code structure of Tradecra
 
 ## High-Level Overview
 
-Tradecraft MCP is a Python MCP (Model Context Protocol) server that exposes OSINT tools and investigation prompts to AI assistants over stdio. The server is built on the FastMCP framework and follows an async-everywhere design using `aiohttp` for HTTP, `dnspython` for DNS, and `asyncwhois` for WHOIS lookups.
+Tradecraft MCP is a Python MCP (Model Context Protocol) server that exposes OSINT tools and investigation prompts to AI assistants. It supports three transports — stdio (default), SSE, and streamable-http — selectable via CLI flags. The server is built on the FastMCP framework and follows an async-everywhere design using `aiohttp` for HTTP, `dnspython` for DNS, and `asyncwhois` for WHOIS lookups.
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   MCP Client                        │
 │              (Claude, etc.)                          │
 └──────────────────────┬──────────────────────────────┘
-                       │ stdio (JSON-RPC)
+                       │ stdio / SSE / streamable-http
 ┌──────────────────────▼──────────────────────────────┐
 │                  FastMCP Server                      │
 │                   server.py                          │
@@ -48,8 +48,10 @@ Tradecraft MCP is a Python MCP (Model Context Protocol) server that exposes OSIN
 ## Startup Sequence
 
 ```
-main()                          # __init__.py — entry point
-  └─ create_server()            # server.py — builds FastMCP instance
+main()                          # __init__.py — entry point, parses CLI args
+  ├─ argparse                   # --transport (stdio|sse|streamable-http)
+  │                             # --host (default 0.0.0.0), --port (default 8000)
+  └─ create_server(host, port)  # server.py — builds FastMCP instance
        ├─ register_all_tools()  # tools/__init__.py — calls each module's register()
        │    ├─ domain_recon.register(mcp)
        │    ├─ email_identity.register(mcp)
@@ -60,7 +62,7 @@ main()                          # __init__.py — entry point
             ├─ person_investigation.register(mcp)
             ├─ threat_assessment.register(mcp)
             └─ general_osint.register(mcp)
-  └─ mcp.run(transport="stdio") # blocks, serving JSON-RPC over stdin/stdout
+  └─ mcp.run(transport=...)     # blocks, serving via selected transport
 
 On first request (lifespan activated):
   app_lifespan()                # server.py
@@ -74,7 +76,7 @@ The lifespan is lazy — `aiohttp.ClientSession` is created when the first reque
 
 ### `__init__.py` / `__main__.py`
 
-Entry points. `__init__.py` exports `main()` which configures logging (to stderr only — stdout is reserved for MCP's stdio transport) and calls `create_server().run()`. `__main__.py` enables `python -m tradecraft_mcp`.
+Entry points. `__init__.py` exports `main()` which parses CLI arguments (`--transport`, `--host`, `--port`), configures logging (to stderr only — stdout is reserved for MCP's stdio transport), and calls `create_server(host, port).run(transport=...)`. `__main__.py` enables `python -m tradecraft_mcp`.
 
 ### `server.py`
 
@@ -241,7 +243,7 @@ assert "expected" in result
 
 ## Key Design Decisions
 
-**Why stdio transport?** MCP clients (Claude Desktop, Claude Code) communicate over stdin/stdout. All application logging goes to stderr to avoid corrupting the transport.
+**Why default to stdio transport?** MCP clients (Claude Desktop, Claude Code) communicate over stdin/stdout. All application logging goes to stderr to avoid corrupting the transport. SSE and streamable-http transports are available via `--transport` for remote access scenarios where the server runs on a separate host.
 
 **Why not `from __future__ import annotations`?** The MCP SDK inspects type annotations at tool registration time to identify the `Context` parameter and build pydantic models for tool arguments. Stringified annotations (from `__future__`) prevent this introspection. Tool modules import `Context` and `FastMCP` directly at runtime.
 
