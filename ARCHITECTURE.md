@@ -45,13 +45,59 @@ Tradecraft MCP is a Python MCP (Model Context Protocol) server that exposes OSIN
                    SecurityTrails)
 ```
 
+## Authentication
+
+Authentication is optional and only applies to HTTP transports (SSE, streamable-http). When an `--auth-token` is provided, the server operates in **Resource Server mode** — it validates bearer tokens against a pre-shared secret rather than implementing a full OAuth2 authorization server.
+
+### Components
+
+| Component | Location | Purpose |
+|---|---|---|
+| `StaticTokenVerifier` | `auth.py` | Implements MCP SDK's `TokenVerifier` protocol. Compares bearer tokens using `hmac.compare_digest` (constant-time). |
+| `build_auth_settings` | `auth.py` | Factory for `AuthSettings` — configures issuer URL, resource server URL, and required scopes. |
+| CLI / env integration | `__init__.py` | `--auth-token`, `--issuer-url`, `--required-scopes` flags with `MCP_AUTH_TOKEN`, `MCP_AUTH_ISSUER_URL`, `MCP_AUTH_SCOPES` env var fallbacks. |
+
+### Request Flow (auth enabled)
+
+```
+Client request
+  │
+  ├─ Authorization: Bearer <token>
+  │
+  ▼
+BearerAuthBackend          (MCP SDK middleware — extracts token from header)
+  │
+  ▼
+StaticTokenVerifier        (our code — hmac.compare_digest against expected token)
+  │
+  ├─ match    → AccessToken(client_id, scopes, expires_at)
+  │               ▼
+  │            RequireAuthMiddleware  (MCP SDK — checks scopes if configured)
+  │               ▼
+  │            Tool / prompt handler
+  │
+  └─ mismatch → None → SDK returns 401
+```
+
+When `token_verifier` and `auth` are passed to `FastMCP(...)`, the SDK automatically adds `BearerAuthBackend` and `RequireAuthMiddleware` as Starlette middleware. No custom middleware is needed.
+
+### Design Decisions
+
+**Why static tokens instead of JWT/OAuth?** Simplicity. A pre-shared secret covers the primary use case (securing a remote deployment) without requiring an external identity provider. The `TokenVerifier` protocol is pluggable — a JWT verifier can replace `StaticTokenVerifier` without changing any other code.
+
+**Why `hmac.compare_digest`?** Prevents timing side-channel attacks on token comparison.
+
+**Why ignored for stdio?** stdio is inherently local (piped through stdin/stdout). Adding auth would break existing MCP client configurations with no security benefit.
+
 ## Startup Sequence
 
 ```
 main()                          # __init__.py — entry point, parses CLI args
   ├─ argparse                   # --transport (stdio|sse|streamable-http)
   │                             # --host (default 0.0.0.0), --port (default 8000)
-  └─ create_server(host, port)  # server.py — builds FastMCP instance
+  │                             # --auth-token, --issuer-url, --required-scopes
+  └─ create_server(host, port, auth_token, issuer_url, required_scopes)
+                                # server.py — builds FastMCP instance
        ├─ register_all_tools()  # tools/__init__.py — calls each module's register()
        │    ├─ domain_recon.register(mcp)
        │    ├─ email_identity.register(mcp)
@@ -76,7 +122,7 @@ The lifespan is lazy — `aiohttp.ClientSession` is created when the first reque
 
 ### `__init__.py` / `__main__.py`
 
-Entry points. `__init__.py` exports `main()` which parses CLI arguments (`--transport`, `--host`, `--port`), configures logging (to stderr only — stdout is reserved for MCP's stdio transport), and calls `create_server(host, port).run(transport=...)`. `__main__.py` enables `python -m tradecraft_mcp`.
+Entry points. `__init__.py` exports `main()` which parses CLI arguments (`--transport`, `--host`, `--port`, `--auth-token`, `--issuer-url`, `--required-scopes`), resolves auth settings from CLI flags with env var fallbacks, configures logging (to stderr only — stdout is reserved for MCP's stdio transport), and calls `create_server(...).run(transport=...)`. `__main__.py` enables `python -m tradecraft_mcp`.
 
 ### `server.py`
 
@@ -259,7 +305,8 @@ assert "expected" in result
 src/tradecraft_mcp/
 ├── __init__.py          # main(), __version__
 ├── __main__.py          # python -m support
-├── server.py            # FastMCP instance, AppContext, lifespan
+├── auth.py              # StaticTokenVerifier, build_auth_settings
+├── server.py            # FastMCP instance, AppContext, lifespan, auth wiring
 ├── config.py            # API key management (load_keys, has_key, require_key)
 ├── tools/
 │   ├── __init__.py      # register_all_tools() dispatcher

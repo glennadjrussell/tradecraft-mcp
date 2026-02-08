@@ -72,6 +72,28 @@ For `streamable-http`, the endpoint is `http://<host>:<port>/mcp`.
 
 Run `uv run tradecraft-mcp --help` to see all options.
 
+### Authentication
+
+HTTP transports are open by default. To require a bearer token:
+
+```bash
+# Via CLI flag
+uv run tradecraft-mcp --transport sse --auth-token my-secret
+
+# Via environment variable
+MCP_AUTH_TOKEN=my-secret uv run tradecraft-mcp --transport streamable-http
+```
+
+Clients must then include `Authorization: Bearer my-secret` in every request. Requests without a valid token receive a 401 response.
+
+| Option | Env Var | Description |
+|---|---|---|
+| `--auth-token` | `MCP_AUTH_TOKEN` | Bearer token (enables auth when set) |
+| `--issuer-url` | `MCP_AUTH_ISSUER_URL` | OAuth issuer URL (default: `http://localhost:<port>`) |
+| `--required-scopes` | `MCP_AUTH_SCOPES` | Comma-separated required scopes |
+
+CLI flags take precedence over environment variables. Auth is ignored for stdio transport.
+
 ## Tools
 
 ### Domain / IP / DNS Recon (9 tools)
@@ -189,6 +211,7 @@ tradecraft-mcp/
 │   └── tradecraft_mcp/
 │       ├── __init__.py               # Entry point, version
 │       ├── __main__.py               # python -m tradecraft_mcp
+│       ├── auth.py                   # Optional bearer token authentication
 │       ├── server.py                 # FastMCP instance, lifespan, registration
 │       ├── config.py                 # API key loading from env vars
 │       ├── tools/
@@ -213,6 +236,7 @@ tradecraft-mcp/
 
 ## Architecture
 
+- **Authentication:** Optional bearer token auth for HTTP transports via `--auth-token` (uses MCP SDK's `TokenVerifier` protocol)
 - **Transport:** stdio (default), SSE, or streamable-http — selectable via `--transport`
 - **HTTP session:** Single `aiohttp.ClientSession` shared across all tools via FastMCP lifespan
 - **Output format:** Markdown strings optimized for LLM consumption
