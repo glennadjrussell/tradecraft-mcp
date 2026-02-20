@@ -24,7 +24,15 @@ def register(mcp: FastMCP) -> None:
         try:
             import asyncwhois
             result = await asyncwhois.aio_whois(target)
-            parsed = result.parser_output
+
+            # Handle both old API (object with attributes) and new API (tuple)
+            if isinstance(result, tuple):
+                # New API returns (query_output, parser_output)
+                query_output, parsed = result
+            else:
+                # Old API returns object with attributes
+                parsed = result.parser_output
+                query_output = getattr(result, "query_output", None)
 
             lines = [f"# WHOIS: {target}\n"]
             field_map = {
@@ -50,8 +58,8 @@ def register(mcp: FastMCP) -> None:
 
             if not any(parsed.values()):
                 lines.append("No structured WHOIS data available.")
-                if hasattr(result, "query_output") and result.query_output:
-                    lines.append(f"\n```\n{result.query_output[:3000]}\n```")
+                if query_output:
+                    lines.append(f"\n```\n{query_output[:3000]}\n```")
 
             return "\n".join(lines)
         except Exception as e:
