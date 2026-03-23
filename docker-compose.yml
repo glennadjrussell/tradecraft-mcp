@@ -1,0 +1,25 @@
+services:
+  tradecraft-mcp:
+    build: .
+    ports:
+      - "8090:8090"
+    environment:
+      # Optional bearer token auth — remove or leave blank to run unauthenticated
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+      # API keys — set in a .env file or in your shell environment
+      SHODAN_API_KEY: ${SHODAN_API_KEY:-}
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY:-}
+      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY:-}
+      CENSYS_API_ID: ${CENSYS_API_ID:-}
+      CENSYS_API_SECRET: ${CENSYS_API_SECRET:-}
+      SECURITYTRAILS_API_KEY: ${SECURITYTRAILS_API_KEY:-}
+      HIBP_API_KEY: ${HIBP_API_KEY:-}
+    restart: unless-stopped
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+volumes:
+  open-webui:

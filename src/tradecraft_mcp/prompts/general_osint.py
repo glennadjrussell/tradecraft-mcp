@@ -56,6 +56,10 @@ Use the available tools to gather data from multiple sources:
 - `google_dork_generate` — Targeted search queries
 - `social_media_profile` — Social media profile data
 
+### Cerebro
+- `social_account_search` — User ID, phone, or handle lookup across platforms
+- `vision_analyse` — Image analysis for intel indicators
+
 ## Phase 3: Processing
 - Organize raw data by source and type
 - Remove duplicates and irrelevant data

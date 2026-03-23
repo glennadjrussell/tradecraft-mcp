@@ -10,8 +10,9 @@ if TYPE_CHECKING:
 
 def register_all_tools(mcp: FastMCP) -> None:
     """Register every tool module with the MCP server."""
-    from . import domain_recon, email_identity, threat_intel, web_social
+    from . import cerebro, domain_recon, email_identity, threat_intel, web_social
 
+    cerebro.register(mcp)
     domain_recon.register(mcp)
     email_identity.register(mcp)
     threat_intel.register(mcp)
