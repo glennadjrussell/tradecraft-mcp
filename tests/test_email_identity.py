@@ -7,16 +7,18 @@ from aioresponses import aioresponses
 
 from tradecraft_mcp import config
 
+from tests.test_utils import tool_map
+
 
 class TestEmailValidate:
     @pytest.mark.asyncio
     async def test_valid_format(self, ctx):
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["email_validate"].fn(email="test@example.com", ctx=ctx)
 
         assert "Format:** Valid" in result
@@ -24,11 +26,11 @@ class TestEmailValidate:
     @pytest.mark.asyncio
     async def test_invalid_format(self, ctx):
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["email_validate"].fn(email="not-an-email", ctx=ctx)
 
         assert "Format:** Invalid" in result
@@ -58,11 +60,11 @@ class TestGravatarLookup:
         )
 
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["gravatar_lookup"].fn(email="test@example.com", ctx=ctx)
 
         assert "Test User" in result
@@ -79,11 +81,11 @@ class TestGravatarLookup:
         )
 
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["gravatar_lookup"].fn(email="nobody@example.com", ctx=ctx)
 
         assert "Not found" in result
@@ -93,11 +95,11 @@ class TestHibpBreachCheck:
     @pytest.mark.asyncio
     async def test_hibp_missing_key(self, ctx):
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
 
         with pytest.raises(ValueError, match="HIBP_API_KEY"):
             await tools["hibp_breach_check"].fn(email="test@example.com", ctx=ctx)
@@ -111,11 +113,11 @@ class TestHibpBreachCheck:
         )
 
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["hibp_breach_check"].fn(email="test@example.com", ctx=ctx)
 
         assert "No breaches found" in result
@@ -140,11 +142,11 @@ class TestHibpBreachCheck:
         )
 
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["hibp_breach_check"].fn(email="test@example.com", ctx=ctx)
 
         assert "TestBreach" in result
@@ -167,11 +169,11 @@ class TestUsernameEnumerate:
         mock_responses.get("https://mastodon.social/@testuser", status=404)
 
         from tradecraft_mcp.tools.email_identity import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["username_enumerate"].fn(username="testuser", ctx=ctx)
 
         assert "GitHub" in result

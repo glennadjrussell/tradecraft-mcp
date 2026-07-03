@@ -2,13 +2,9 @@
 
 import logging
 
-from mcp.server.fastmcp import Context, FastMCP
+from fastmcp import Context, FastMCP
 
 log = logging.getLogger(__name__)
-
-
-def _get_session(ctx: Context):
-    return ctx.request_context.lifespan_context.http_session
 
 
 def register(mcp: FastMCP) -> None:

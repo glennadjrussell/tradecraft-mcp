@@ -4,13 +4,16 @@ version = "0.1.0"
 description = "OSINT tradecraft toolkit exposed as an MCP server"
 requires-python = ">=3.12"
 dependencies = [
-    "mcp[cli]",
-    "aiohttp",
-    "dnspython",
-    "asyncwhois",
-    "beautifulsoup4",
-    "lxml",
-    "shodan",
+    "aiohttp>=3.13.3",
+    "asyncwhois>=1.1.12",
+    "beautifulsoup4>=4.14.3",
+    "dnspython>=2.8.0",
+    "fastmcp>=3.2.0",
+    "google-auth>=2.49.1",
+    "lxml>=6.0.2",
+    "mcp[cli]>=1.26.0",
+    "requests>=2.32.5",
+    "shodan>=1.31.0",
 ]
 
 [project.scripts]
@@ -29,7 +32,7 @@ asyncio_mode = "auto"
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "aioresponses",
+    "aioresponses>=0.7.8",
+    "pytest-asyncio>=1.3.0",
+    "pytest>=9.0.2",
 ]

@@ -6,15 +6,12 @@ import re
 
 import aiohttp
 import dns.asyncresolver
-from mcp.server.fastmcp import Context, FastMCP
+from fastmcp import Context, FastMCP
 
 from .. import config
+from ..http_session_ctx import get_http_session
 
 log = logging.getLogger(__name__)
-
-
-def _get_session(ctx: Context) -> aiohttp.ClientSession:
-    return ctx.request_context.lifespan_context.http_session
 
 
 def register(mcp: FastMCP) -> None:
@@ -170,7 +167,7 @@ def register(mcp: FastMCP) -> None:
     async def gravatar_lookup(email: str, ctx: Context) -> str:
         """Look up Gravatar profile for an email address. Returns profile info and avatar URL."""
         email_hash = hashlib.md5(email.strip().lower().encode()).hexdigest()
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         lines = [f"# Gravatar: {email}\n"]
         lines.append(f"- **Hash:** `{email_hash}`")
@@ -231,7 +228,7 @@ def register(mcp: FastMCP) -> None:
 
         Checks GitHub, Twitter/X, Reddit, Instagram, LinkedIn, YouTube, TikTok, Pinterest, Medium, and more.
         """
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
         platforms = {
             "GitHub": f"https://github.com/{username}",
             "Reddit": f"https://www.reddit.com/user/{username}",
@@ -284,7 +281,7 @@ def register(mcp: FastMCP) -> None:
     async def hibp_breach_check(email: str, ctx: Context) -> str:
         """Check Have I Been Pwned for data breaches associated with an email address."""
         api_key = config.require_key("HIBP_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
@@ -331,7 +328,7 @@ def register(mcp: FastMCP) -> None:
     async def hibp_paste_check(email: str, ctx: Context) -> str:
         """Check Have I Been Pwned paste index for an email address."""
         api_key = config.require_key("HIBP_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://haveibeenpwned.com/api/v3/pasteaccount/{email}"
