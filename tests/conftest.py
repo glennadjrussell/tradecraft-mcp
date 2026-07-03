@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from unittest.mock import MagicMock
-
 import aiohttp
 import pytest
 import pytest_asyncio
@@ -13,25 +10,16 @@ from aioresponses import aioresponses as aioresponses_ctx
 from tradecraft_mcp import config
 
 
-@dataclass
-class AppContext:
-    """Mirror of server.AppContext for tests."""
-    http_session: aiohttp.ClientSession
-
-
-class FakeLifespan:
-    """Minimal stand-in for ``ctx.request_context.lifespan_context``."""
-    def __init__(self, session: aiohttp.ClientSession) -> None:
-        self.http_session = session
-
-
 class FakeRequestContext:
+    """Minimal stand-in for MCP request context with dict lifespan (FastMCP)."""
+
     def __init__(self, session: aiohttp.ClientSession) -> None:
-        self.lifespan_context = FakeLifespan(session)
+        self.lifespan_context = {"http_session": session}
 
 
 class FakeContext:
-    """Minimal stand-in for ``mcp.server.fastmcp.Context``."""
+    """Minimal stand-in for ``fastmcp.server.context.Context``."""
+
     def __init__(self, session: aiohttp.ClientSession) -> None:
         self.request_context = FakeRequestContext(session)
 

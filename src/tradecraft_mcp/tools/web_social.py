@@ -6,20 +6,18 @@ from urllib.parse import urlparse
 
 import aiohttp
 from bs4 import BeautifulSoup
-from mcp.server.fastmcp import Context, FastMCP
+from fastmcp import Context, FastMCP
+
+from ..http_session_ctx import get_http_session
 
 log = logging.getLogger(__name__)
-
-
-def _get_session(ctx: Context) -> aiohttp.ClientSession:
-    return ctx.request_context.lifespan_context.http_session
 
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def web_fetch(url: str, max_length: int = 5000, ctx: Context = None) -> str:
         """Fetch a web page and return clean text content with metadata. Respects robots.txt."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         parsed = urlparse(url)
         if not parsed.scheme:
@@ -89,7 +87,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def web_headers_analyze(url: str, ctx: Context) -> str:
         """Analyze HTTP security headers — CSP, HSTS, X-Frame-Options, cookies, and more."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         if not url.startswith(("http://", "https://")):
             url = f"https://{url}"
@@ -184,7 +182,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def metadata_extract(url: str, ctx: Context) -> str:
         """Extract metadata from a web page — OpenGraph, Twitter Card, linked resources, technology fingerprinting."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         if not url.startswith(("http://", "https://")):
             url = f"https://{url}"
@@ -348,7 +346,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def wayback_lookup(url: str, limit: int = 10, ctx: Context = None) -> str:
         """Look up archived snapshots of a URL on the Wayback Machine (web.archive.org)."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             # CDX API for snapshot listing
@@ -403,7 +401,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def social_media_profile(url: str, ctx: Context) -> str:
         """Extract public profile information from a social media URL (GitHub, Reddit, Medium, etc.)."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         parsed = urlparse(url)
         domain = parsed.netloc.lower().replace("www.", "")
@@ -479,7 +477,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def website_technology_detect(url: str, ctx: Context) -> str:
         """Detect technologies used by a website — CMS, frameworks, CDN, analytics, from headers and HTML."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         if not url.startswith(("http://", "https://")):
             url = f"https://{url}"

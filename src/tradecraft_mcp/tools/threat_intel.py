@@ -5,22 +5,19 @@ import logging
 import re
 
 import aiohttp
-from mcp.server.fastmcp import Context, FastMCP
+from fastmcp import Context, FastMCP
 
 from .. import config
+from ..http_session_ctx import get_http_session
 
 log = logging.getLogger(__name__)
-
-
-def _get_session(ctx: Context) -> aiohttp.ClientSession:
-    return ctx.request_context.lifespan_context.http_session
 
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def threat_feed_check(indicator: str, ctx: Context) -> str:
         """Check an indicator (IP, domain, URL, hash) against free threat feeds: Abuse.ch URLhaus, Feodo Tracker, SSL Blacklist."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
         lines = [f"# Threat Feed Check: `{indicator}`\n"]
         found_threats = False
 
@@ -124,7 +121,7 @@ def register(mcp: FastMCP) -> None:
     async def virustotal_file_report(file_hash: str, ctx: Context) -> str:
         """Get VirusTotal analysis report for a file hash (MD5, SHA1, or SHA256)."""
         api_key = config.require_key("VIRUSTOTAL_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://www.virustotal.com/api/v3/files/{file_hash}"
@@ -187,7 +184,7 @@ def register(mcp: FastMCP) -> None:
     async def virustotal_url_scan(url_to_scan: str, ctx: Context) -> str:
         """Scan or retrieve VirusTotal report for a URL."""
         api_key = config.require_key("VIRUSTOTAL_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             import base64
@@ -240,7 +237,7 @@ def register(mcp: FastMCP) -> None:
     async def virustotal_domain_report(domain: str, ctx: Context) -> str:
         """Get VirusTotal domain reputation report — DNS, detections, WHOIS, popularity."""
         api_key = config.require_key("VIRUSTOTAL_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://www.virustotal.com/api/v3/domains/{domain}"
@@ -293,7 +290,7 @@ def register(mcp: FastMCP) -> None:
     async def virustotal_ip_report(ip: str, ctx: Context) -> str:
         """Get VirusTotal IP address reputation report — associated URLs, files, detections."""
         api_key = config.require_key("VIRUSTOTAL_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://www.virustotal.com/api/v3/ip_addresses/{ip}"
@@ -331,7 +328,7 @@ def register(mcp: FastMCP) -> None:
     async def abuseipdb_check(ip: str, max_age_days: int = 90, ctx: Context = None) -> str:
         """Check an IP address against AbuseIPDB for abuse reports, confidence score, and ISP info."""
         api_key = config.require_key("ABUSEIPDB_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = "https://api.abuseipdb.com/api/v2/check"

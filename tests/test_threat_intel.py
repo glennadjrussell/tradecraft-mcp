@@ -7,6 +7,8 @@ from aioresponses import aioresponses
 
 from tradecraft_mcp import config
 
+from tests.test_utils import tool_map
+
 
 class TestThreatFeedCheck:
     @pytest.mark.asyncio
@@ -28,11 +30,11 @@ class TestThreatFeedCheck:
         )
 
         from tradecraft_mcp.tools.threat_intel import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["threat_feed_check"].fn(indicator="192.168.1.1", ctx=ctx)
 
         assert "No threats found" in result
@@ -54,11 +56,11 @@ class TestThreatFeedCheck:
         )
 
         from tradecraft_mcp.tools.threat_intel import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["threat_feed_check"].fn(indicator="http://evil.com/malware.exe", ctx=ctx)
 
         assert "Found" in result
@@ -69,11 +71,11 @@ class TestVirusTotalFileReport:
     @pytest.mark.asyncio
     async def test_vt_missing_key(self, ctx):
         from tradecraft_mcp.tools.threat_intel import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
 
         with pytest.raises(ValueError, match="VIRUSTOTAL_API_KEY"):
             await tools["virustotal_file_report"].fn(file_hash="abc123", ctx=ctx)
@@ -115,11 +117,11 @@ class TestVirusTotalFileReport:
         )
 
         from tradecraft_mcp.tools.threat_intel import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["virustotal_file_report"].fn(file_hash=test_hash, ctx=ctx)
 
         assert "45/70" in result
@@ -131,11 +133,11 @@ class TestAbuseIPDBCheck:
     @pytest.mark.asyncio
     async def test_abuseipdb_missing_key(self, ctx):
         from tradecraft_mcp.tools.threat_intel import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
 
         with pytest.raises(ValueError, match="ABUSEIPDB_API_KEY"):
             await tools["abuseipdb_check"].fn(ip="8.8.8.8", ctx=ctx)
@@ -164,11 +166,11 @@ class TestAbuseIPDBCheck:
         )
 
         from tradecraft_mcp.tools.threat_intel import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["abuseipdb_check"].fn(ip="8.8.8.8", ctx=ctx)
 
         assert "Google LLC" in result

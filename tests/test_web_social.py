@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from aioresponses import aioresponses
 
+from tests.test_utils import tool_map
+
 
 class TestWebFetch:
     @pytest.mark.asyncio
@@ -20,11 +22,11 @@ class TestWebFetch:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["web_fetch"].fn(url="https://example.com", ctx=ctx)
 
         assert "Example" in result
@@ -38,11 +40,11 @@ class TestWebFetch:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["web_fetch"].fn(url="https://example.com/secret/page", ctx=ctx)
 
         assert "robots.txt" in result
@@ -63,11 +65,11 @@ class TestWebHeadersAnalyze:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["web_headers_analyze"].fn(url="https://example.com", ctx=ctx)
 
         assert "HSTS enabled" in result
@@ -80,11 +82,11 @@ class TestGoogleDorkGenerate:
     @pytest.mark.asyncio
     async def test_dork_general(self, ctx):
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["google_dork_generate"].fn(target="example.com", goal="general", ctx=ctx)
 
         assert "site:example.com" in result
@@ -93,11 +95,11 @@ class TestGoogleDorkGenerate:
     @pytest.mark.asyncio
     async def test_dork_files(self, ctx):
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["google_dork_generate"].fn(target="example.com", goal="files", ctx=ctx)
 
         assert "ext:pdf" in result
@@ -128,11 +130,11 @@ class TestWaybackLookup:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["wayback_lookup"].fn(url="example.com", ctx=ctx)
 
         assert "2024-01-01" in result
@@ -163,11 +165,11 @@ class TestWebsiteTechnologyDetect:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["website_technology_detect"].fn(url="https://example.com", ctx=ctx)
 
         assert "nginx" in result
@@ -197,11 +199,11 @@ class TestMetadataExtract:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["metadata_extract"].fn(url="https://example.com", ctx=ctx)
 
         assert "Test Page" in result
@@ -233,11 +235,11 @@ class TestSocialMediaProfile:
         )
 
         from tradecraft_mcp.tools.web_social import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["social_media_profile"].fn(
             url="https://github.com/testuser", ctx=ctx
         )

@@ -6,15 +6,12 @@ import logging
 import aiohttp
 import dns.asyncresolver
 import dns.reversename
-from mcp.server.fastmcp import Context, FastMCP
+from fastmcp import Context, FastMCP
 
 from .. import config
+from ..http_session_ctx import get_http_session
 
 log = logging.getLogger(__name__)
-
-
-def _get_session(ctx: Context) -> aiohttp.ClientSession:
-    return ctx.request_context.lifespan_context.http_session
 
 
 def register(mcp: FastMCP) -> None:
@@ -125,7 +122,7 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def cert_transparency_search(domain: str, ctx: Context) -> str:
         """Search Certificate Transparency logs (crt.sh) for certificates issued for a domain. Reveals subdomains."""
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
         try:
             url = "https://crt.sh/"
             params = {"q": f"%.{domain}", "output": "json"}
@@ -183,7 +180,7 @@ def register(mcp: FastMCP) -> None:
         except ValueError:
             return f"`{ip}` is not a valid IP address."
 
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
         try:
             url = f"http://ip-api.com/json/{ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,asname,reverse,query"
             async with session.get(url) as resp:
@@ -216,7 +213,7 @@ def register(mcp: FastMCP) -> None:
         Uses crt.sh (free) and SecurityTrails (if API key is set).
         Set use_bruteforce=True to also try common subdomain prefixes via DNS.
         """
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
         all_subs: set[str] = set()
         sources: dict[str, list[str]] = {}
 
@@ -307,7 +304,7 @@ def register(mcp: FastMCP) -> None:
     async def shodan_host_lookup(ip: str, ctx: Context) -> str:
         """Look up a host on Shodan — open ports, services, vulnerabilities, geolocation."""
         api_key = config.require_key("SHODAN_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://api.shodan.io/shodan/host/{ip}?key={api_key}"
@@ -367,7 +364,7 @@ def register(mcp: FastMCP) -> None:
     async def shodan_domain_search(domain: str, ctx: Context) -> str:
         """Search Shodan for hosts associated with a domain."""
         api_key = config.require_key("SHODAN_API_KEY")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://api.shodan.io/dns/domain/{domain}?key={api_key}"
@@ -405,7 +402,7 @@ def register(mcp: FastMCP) -> None:
         """Look up a host on Censys — services, TLS certificates, ASN, location."""
         api_id = config.require_key("CENSYS_API_ID")
         api_secret = config.require_key("CENSYS_API_SECRET")
-        session = _get_session(ctx)
+        session = get_http_session(ctx)
 
         try:
             url = f"https://search.censys.io/api/v2/hosts/{ip}"

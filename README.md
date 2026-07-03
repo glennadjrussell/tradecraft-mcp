@@ -38,7 +38,7 @@ claude mcp add tradecraft-mcp -- uv run --directory /path/to/tradecraft-mcp trad
 ### MCP Inspector
 
 ```bash
-mcp dev src/tradecraft_mcp/server.py
+uv run mcp dev src/tradecraft_mcp/server.py
 ```
 
 ### Remote Access (SSE / Streamable HTTP)
@@ -74,7 +74,9 @@ Run `uv run tradecraft-mcp --help` to see all options.
 
 ### Authentication
 
-HTTP transports are open by default. To require a bearer token:
+HTTP transports are open by default. Three authentication modes are supported: static bearer token, Google ID token verification, and full Google OAuth flow.
+
+#### Static Bearer Token
 
 ```bash
 # Via CLI flag
@@ -86,13 +88,64 @@ MCP_AUTH_TOKEN=my-secret uv run tradecraft-mcp --transport streamable-http
 
 Clients must then include `Authorization: Bearer my-secret` in every request. Requests without a valid token receive a 401 response.
 
+#### Google ID Token Verification
+
+Verify Google-issued JWT ID tokens without running a full OAuth flow. Requires only the Google OAuth2 client ID:
+
+```bash
+# Via CLI flags
+uv run tradecraft-mcp --transport sse --google-client-id YOUR_CLIENT_ID
+
+# Restrict to specific emails or domains
+uv run tradecraft-mcp --transport sse \
+  --google-client-id YOUR_CLIENT_ID \
+  --google-allowed-emails alice@example.com,bob@example.com
+
+uv run tradecraft-mcp --transport sse \
+  --google-client-id YOUR_CLIENT_ID \
+  --google-allowed-domains example.com,mycompany.com
+
+# Via environment variables
+MCP_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID uv run tradecraft-mcp --transport sse
+```
+
+#### Full Google OAuth Flow
+
+For a complete OAuth2 authorization code flow (consent screen, token exchange, refresh tokens), provide both the client ID and client secret:
+
+```bash
+# Via CLI flags
+uv run tradecraft-mcp --transport sse \
+  --google-client-id YOUR_CLIENT_ID \
+  --google-client-secret YOUR_CLIENT_SECRET
+
+# With email/domain restrictions
+uv run tradecraft-mcp --transport sse \
+  --google-client-id YOUR_CLIENT_ID \
+  --google-client-secret YOUR_CLIENT_SECRET \
+  --google-allowed-domains mycompany.com
+
+# Via environment variables
+MCP_GOOGLE_CLIENT_ID=YOUR_CLIENT_ID \
+MCP_GOOGLE_CLIENT_SECRET=YOUR_CLIENT_SECRET \
+  uv run tradecraft-mcp --transport sse
+```
+
+The server exposes `/oauth/google/callback` as the redirect URI — configure this in your Google Cloud Console OAuth credentials.
+
+#### Auth Options Reference
+
 | Option | Env Var | Description |
 |---|---|---|
-| `--auth-token` | `MCP_AUTH_TOKEN` | Bearer token (enables auth when set) |
+| `--auth-token` | `MCP_AUTH_TOKEN` | Static bearer token (enables simple auth when set) |
+| `--google-client-id` | `MCP_GOOGLE_CLIENT_ID` | Google OAuth2 client ID (enables Google auth) |
+| `--google-client-secret` | `MCP_GOOGLE_CLIENT_SECRET` | Google OAuth2 client secret (enables full OAuth flow) |
+| `--google-allowed-emails` | `MCP_GOOGLE_ALLOWED_EMAILS` | Comma-separated allowed email addresses |
+| `--google-allowed-domains` | `MCP_GOOGLE_ALLOWED_DOMAINS` | Comma-separated allowed email domains |
 | `--issuer-url` | `MCP_AUTH_ISSUER_URL` | OAuth issuer URL (default: `http://localhost:<port>`) |
 | `--required-scopes` | `MCP_AUTH_SCOPES` | Comma-separated required scopes |
 
-CLI flags take precedence over environment variables. Auth is ignored for stdio transport.
+CLI flags take precedence over environment variables. Auth is ignored for stdio transport. When both Google auth and a static token are configured, Google auth takes precedence.
 
 ## Tools
 
@@ -211,7 +264,8 @@ tradecraft-mcp/
 │   └── tradecraft_mcp/
 │       ├── __init__.py               # Entry point, version
 │       ├── __main__.py               # python -m tradecraft_mcp
-│       ├── auth.py                   # Optional bearer token authentication
+│       ├── auth.py                   # Token verification (static + Google)
+│       ├── oauth_provider.py         # Google OAuth authorization server provider
 │       ├── server.py                 # FastMCP instance, lifespan, registration
 │       ├── config.py                 # API key loading from env vars
 │       ├── tools/
@@ -236,7 +290,7 @@ tradecraft-mcp/
 
 ## Architecture
 
-- **Authentication:** Optional bearer token auth for HTTP transports via `--auth-token` (uses MCP SDK's `TokenVerifier` protocol)
+- **Authentication:** Optional auth for HTTP transports — static bearer token, Google ID token verification, or full Google OAuth2 flow (uses MCP SDK's `TokenVerifier` protocol and `OAuthAuthorizationServerProvider`)
 - **Transport:** stdio (default), SSE, or streamable-http — selectable via `--transport`
 - **HTTP session:** Single `aiohttp.ClientSession` shared across all tools via FastMCP lifespan
 - **Output format:** Markdown strings optimized for LLM consumption

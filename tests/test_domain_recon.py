@@ -8,6 +8,8 @@ from aioresponses import aioresponses
 from tradecraft_mcp import config
 from tradecraft_mcp.server import create_server
 
+from tests.test_utils import tool_map
+
 
 @pytest.fixture
 def mcp():
@@ -36,13 +38,13 @@ class TestCertTransparencySearch:
         )
 
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
 
         # Get the tool function directly
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["cert_transparency_search"].fn(domain="example.com", ctx=ctx)
 
         assert "example.com" in result
@@ -58,11 +60,11 @@ class TestCertTransparencySearch:
         )
 
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["cert_transparency_search"].fn(domain="example.com", ctx=ctx)
 
         assert "No certificates found" in result
@@ -94,11 +96,11 @@ class TestIpGeolocation:
         )
 
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["ip_geolocation"].fn(ip="8.8.8.8", ctx=ctx)
 
         assert "United States" in result
@@ -108,11 +110,11 @@ class TestIpGeolocation:
     @pytest.mark.asyncio
     async def test_geolocation_invalid_ip(self, ctx):
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["ip_geolocation"].fn(ip="not-an-ip", ctx=ctx)
 
         assert "not a valid IP" in result
@@ -122,11 +124,11 @@ class TestShodanHostLookup:
     @pytest.mark.asyncio
     async def test_shodan_missing_key(self, ctx):
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
 
         with pytest.raises(ValueError, match="SHODAN_API_KEY"):
             await tools["shodan_host_lookup"].fn(ip="8.8.8.8", ctx=ctx)
@@ -160,11 +162,11 @@ class TestShodanHostLookup:
         )
 
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["shodan_host_lookup"].fn(ip="8.8.8.8", ctx=ctx)
 
         assert "Google LLC" in result
@@ -176,11 +178,11 @@ class TestReverseDns:
     @pytest.mark.asyncio
     async def test_invalid_ip(self, ctx):
         from tradecraft_mcp.tools.domain_recon import register
-        from mcp.server.fastmcp import FastMCP
+        from fastmcp import FastMCP
 
         mcp = FastMCP("test")
         register(mcp)
-        tools = {t.name: t for t in mcp._tool_manager._tools.values()}
+        tools = await tool_map(mcp)
         result = await tools["reverse_dns"].fn(ip="not-valid", ctx=ctx)
 
         assert "not a valid IP" in result
